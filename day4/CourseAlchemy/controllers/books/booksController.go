@@ -81,40 +81,43 @@ func UpdateBooks(c echo.Context) error {
 		"message": "failed",
 	}
 	par := c.Param("id")
+	intPar, _ := strconv.Atoi(par)
+	if intPar > 0 {
+		db := config.InitDB()
+		modelName := models.Books{}
+		db.Table(table).First(&modelName, intPar)
+		if (modelName == models.Books{}) {
+			return c.JSON(http.StatusOK, result)
+		}
 
-	db := config.InitDB()
-	modelName := models.Books{}
-	db.Table(table).First(&modelName, par)
-	if (modelName == models.Books{}) {
-		return c.JSON(http.StatusOK, result)
+		var jsonData = make(map[string]interface{})
+		err := c.Bind(&jsonData)
+		if err != nil {
+			fmt.Println(err)
+			return c.JSON(http.StatusOK, result)
+
+		}
+		if jsonData["name"] != nil {
+			modelName.Name = jsonData["name"].(string)
+		}
+		if jsonData["author"] != nil {
+			modelName.Author = jsonData["author"].(string)
+		}
+		if jsonData["publisher"] != nil {
+			modelName.Publisher = jsonData["publisher"].(string)
+		}
+		if jsonData["year"] != nil {
+			modelName.Year = int(jsonData["year"].(float64))
+		}
+		saveResult := db.Table(table).Save(&modelName)
+
+		if saveResult.RowsAffected > 0 {
+			result["message"] = "success"
+			result["code"] = http.StatusOK
+			result["data"] = modelName
+		}
 	}
 
-	var jsonData = make(map[string]interface{})
-	err := c.Bind(&jsonData)
-	if err != nil {
-		fmt.Println(err)
-		return c.JSON(http.StatusOK, result)
-
-	}
-	if jsonData["name"] != nil {
-		modelName.Name = jsonData["name"].(string)
-	}
-	if jsonData["author"] != nil {
-		modelName.Author = jsonData["author"].(string)
-	}
-	if jsonData["publisher"] != nil {
-		modelName.Publisher = jsonData["publisher"].(string)
-	}
-	if jsonData["year"] != nil {
-		modelName.Year = int(jsonData["year"].(float64))
-	}
-	saveResult := db.Table(table).Save(&modelName)
-
-	if saveResult.RowsAffected > 0 {
-		result["message"] = "success"
-		result["code"] = http.StatusOK
-		result["data"] = modelName
-	}
 	return c.JSON(http.StatusOK, result)
 }
 
@@ -129,17 +132,19 @@ func DeleteBooks(c echo.Context) error {
 		fmt.Println(err)
 	}
 	modelName.ID = uint(u64)
+	if modelName.ID > 0 {
+		db := config.InitDB()
+		bookModel := models.Books{}
+		saveResult := db.Table(table).Delete(&bookModel, uint(u64))
+		if err != nil {
+			return err
+		}
+		if saveResult.RowsAffected > 0 {
+			result["message"] = "success"
+			result["code"] = http.StatusOK
+			result["data"] = modelName
+		}
+	}
 
-	db := config.InitDB()
-	bookModel := models.Books{}
-	saveResult := db.Table(table).Delete(&bookModel, uint(u64))
-	if err != nil {
-		return err
-	}
-	if saveResult.RowsAffected > 0 {
-		result["message"] = "success"
-		result["code"] = http.StatusOK
-		result["data"] = modelName
-	}
 	return c.JSON(http.StatusOK, result)
 }

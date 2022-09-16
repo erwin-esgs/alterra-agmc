@@ -64,7 +64,7 @@ func CreateBooks(c echo.Context) error {
 	if jsonData["password"] != nil {
 		modelName.Publisher = jsonData["password"].(string)
 	}
-	if jsonData["password"] != nil {
+	if jsonData["year"] != nil {
 		modelName.Year = int(jsonData["year"].(float64))
 	}
 
